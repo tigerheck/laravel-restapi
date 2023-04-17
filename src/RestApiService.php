@@ -2,46 +2,66 @@
 namespace TigerHeck\RestApi;
 
 use Illuminate\Support\Facades\Http;
+use TigerHeck\RestApi\Models\RestapiToken;
  
 class RestApiService {
     
     private $base_url;
-    private $token;
+    private $client_id;
+    private $scope;
+    private $client_secret;
+    private $grant_type;
+    private $url_access_token;
     private $http;
 
-    public function __construct($base_url, $token)
+    public function __construct()
     {
-        $this->base_url = $base_url;
-        $this->token = $token;
+        $this->base_url = config('restapi.base_url');
+        $this->client_id =  config('restapi.clientId');
+        $this->scope = config('restapi.scopes');
+        $this->client_secret = config('restapi.clientSecret');
+        $this->grant_type = config('restapi.grant_type');
+        $this->url_access_token = config('restapi.urlAccessToken');
         $this->http = $this->http();
     }
 
     public function http(){
-        return Http::withToken($this->token)->baseUrl($this->base_url);
+        $accessToken = $this->getAccessToken();
+        return Http::withToken($accessToken)->baseUrl($this->base_url);
     }
 
-    public function getForms($access_by = null) {
-        return self::responseCollection( $this->http->get('/platform/v1/forms'), $access_by);
+    private function getAccessToken($token_type = 'Bearer') {
+        $model = RestapiToken::where('token_type', 'Bearer')->whereRaw("TIME_TO_SEC(TIMEDIFF(CURRENT_TIMESTAMP, created_at)) < expires_in")->first();
+        if(!$model) {
+            $model = $this->generateAccessToken();
+        }
+        if($model && $model instanceof RestapiToken) {
+            return $model->access_token;
+        }
+        
+        return false;
     }
 
-    public function allClients($input = [],$access_by = null) {
-        return self::responseCollection( $this->http->get('/platform/v1/clients', $input), $access_by);
+
+    public function generateAccessToken() {
+        $response = Http::asForm()->post($this->url_access_token,[
+            "client_id"     =>  $this->client_id,
+            "scope"         =>  $this->scope,
+            "client_secret" =>  $this->client_secret,
+            "grant_type"    =>  $this->grant_type,
+        ]);
+        $data = $response->json();
+        if($response->successful()) {
+            return $this->storeAccessToken( $data );
+        }
+        if(isset($data['error_description']) && is_string($data['error_description'])) {            
+            throw new \Exception($data['error_description']);
+        }
+        return $data;
     }
 
-    public function createClient($input,$access_by = null) {
-        return self::responseCollection( $this->http->post('/platform/v1/clients', $input), $access_by);
-    }
-
-    public function getClient($id, $access_by = null){
-        return self::responseCollection( $this->http->get('/platform/v1/clients/'.$id), $access_by);
-    }
-
-    public function updateClient($id, $input, $access_by = null){
-        return self::responseCollection( $this->http->put('/platform/v1/clients/'.$id, $input), $access_by);
-    }
-
-    public function deleteClient($id, $access_by = null){
-        return self::responseCollection( $this->http->delete('/platform/v1/clients/'.$id), $access_by);
+    private function storeAccessToken($data) {
+        return $data ? RestapiToken::create($data) : false;
     }
 
     private function responseCollection($response, $access_by) {

@@ -23,13 +23,20 @@ Laravel RestApi requires connection configuration. To get started, you'll need t
 $ php artisan vendor:publish --provider="TigerHeck\RestApi\RestApiServiceProvider"
 ```
 
-Add `RESTAPI_BASE_URL=` and `RESTAPI_API_KEY=` to your enviroment configuraiton file
-
-## Examples with \Http::restapi()
+add Your enviroment configuraiton file
+```
+RESTAPI_BASE_URL=
+RESTAPI_CLIENT_ID=
+RESTAPI_SECRET_ID=
+RESTAPI_URL_ACCESS_TOKEN="/connect/token"
+RESTAPI_SCOPES="********"
+RESTAPI_GRANT_TYPE="client_credentials"
+```
+## Examples with app("restapi")->http()
 
 GET 
 ```
-$response = \Http::restapi()->get("/api/get/url", [
+$response = app("restapi")->http()->get("/api/get/url", [
     'param1' => $param1,
     'param2' => 'param2',
 ]);
@@ -37,7 +44,7 @@ $response = \Http::restapi()->get("/api/get/url", [
 
 POST
 ```
-$response = \Http::restapi()->post("/api/post/url", [
+$response = app("restapi")->http()->post("/api/post/url", [
     'data1'             => $data1,
     'data2'             => $data2,
     'data3'             => $data3,
@@ -46,7 +53,7 @@ $response = \Http::restapi()->post("/api/post/url", [
 
 PUT
 ```
-$response = \Http::restapi()->put("/api/post/url/{$id}", [
+$response = app("restapi")->http()->put("/api/post/url/{$id}", [
     'data1'             => $data1,
     'data2'             => $data2,
     'data3'             => $data3,
@@ -55,5 +62,5 @@ $response = \Http::restapi()->put("/api/post/url/{$id}", [
 
 Delete
 ```
-$response = \Http::restapi()->delete("/api/delete/url/{$id}");
+$response = app("restapi")->http()->delete("/api/delete/url/{$id}");
 ```

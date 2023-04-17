@@ -12,13 +12,9 @@ class RestApiServiceProvider extends ServiceProvider
 
     public function boot()
     {
-        $this->publishes([
-            __DIR__ . '/../config' => config_path(),
-        ], 'config');
-
-        Http::macro('restapi', function () {
-            return Http::withToken(config('restapi.api_key'))->baseUrl(config('restapi.base_url'));
-        });
+        if ($this->app->runningInConsole()) {
+            $this->configurePublishing();
+        }
     }
     
     public function register()
@@ -31,10 +27,23 @@ class RestApiServiceProvider extends ServiceProvider
         return ['restapi'];
     }
 
+    public function configurePublishing()
+    {
+        $this->publishes([
+            __DIR__.'/../config/restapi.php' => config_path('restapi.php'),
+        ], 'config');
+
+        $timestamp = date('Y_m_d_His', time());
+
+        $this->publishes([
+            __DIR__.'/database/migrations/create_restapi_tokens_table.php' => $this->app->databasePath()."/migrations/{$timestamp}_create_restapi_tokens_table.php",
+        ], 'migrations');
+    }
+
     protected function registerRestApi()
     {
         $this->app->bind('restapi', function ($app) {
-            return new RestApiService(config('restapi.base_url'), config('restapi.api_key'));
+            return new RestApiService();
         });
     }
 }
