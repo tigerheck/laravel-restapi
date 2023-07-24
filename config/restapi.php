@@ -32,4 +32,9 @@ return [
     set the grant type
     */
     'grant_type' => env('RESTAPI_GRANT_TYPE', 'client_credentials'),
+
+    /*
+    set the access request data
+    */
+    'access_request_data' => [],
 ];

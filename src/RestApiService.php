@@ -44,12 +44,15 @@ class RestApiService {
 
 
     public function generateAccessToken() {
+        $access_request_data = config('restapi.access_request_data') ?? [];
+
         $response = Http::asForm()->post($this->url_access_token,[
             "client_id"     =>  $this->client_id,
             "scope"         =>  $this->scope,
             "client_secret" =>  $this->client_secret,
             "grant_type"    =>  $this->grant_type,
-        ]);
+        ] + (is_array($access_request_data) ? $access_request_data : []));
+        
         $data = $response->json();
         if($response->successful()) {
             return $this->storeAccessToken( $data );
@@ -62,6 +65,26 @@ class RestApiService {
 
     private function storeAccessToken($data) {
         return $data ? RestapiToken::create($data) : false;
+    }
+
+    public function get($endpoint = '/', $data = '', $access_by = null) {
+        return self::responseCollection( $this->http->get($endpoint, $data), $access_by);
+    }
+
+    public function post($endpoint = '/', $data = [], $access_by = null) {
+        return self::responseCollection( $this->http->post($endpoint, $data), $access_by);
+    }
+
+    public function put($endpoint = '/', $data = [], $access_by = null) {
+        return self::responseCollection( $this->http->put($endpoint, $data), $access_by);
+    }
+
+    public function patch($endpoint = '/', $data = [], $access_by = null) {
+        return self::responseCollection( $this->http->patch($endpoint, $data), $access_by);
+    }
+
+    public function delete($endpoint = '/', $data = [], $access_by = null) {
+        return self::responseCollection( $this->http->delete($endpoint, $data), $access_by);
     }
 
     private function responseCollection($response, $access_by) {
